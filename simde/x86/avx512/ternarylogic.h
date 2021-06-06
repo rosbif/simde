@@ -28,8 +28,6 @@
 #if !defined(SIMDE_X86_AVX512_TERNARYLOGIC_H)
 #define SIMDE_X86_AVX512_TERNARYLOGIC_H
 
-#include <string.h>
-
 #include "types.h"
 
 HEDLEY_DIAGNOSTIC_PUSH
@@ -59,10 +57,9 @@ simde_mm_ternarylogic_epi32(simde__m128i a, simde__m128i b, simde__m128i c, int 
 
   if (negate) imm8 = ~imm8;
 
-  memset(&r_, 0, sizeof(r_));
-
   SIMDE_VECTORIZE
   for (size_t i = 0 ; i < (sizeof(r_.u32) / sizeof(r_.u32[0])) ; i++) {
+    r_.u32[i] = 0;
     if (imm8 & 0x80) r_.u32[i] |=  a_.u32[i] &  b_.u32[i] &  c_.u32[i];
     if (imm8 & 0x40) r_.u32[i] |=  a_.u32[i] &  b_.u32[i] & ~c_.u32[i];
     if (imm8 & 0x20) r_.u32[i] |=  a_.u32[i] & ~b_.u32[i] &  c_.u32[i];
