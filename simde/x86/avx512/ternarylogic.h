@@ -38,12 +38,9 @@ SIMDE_FUNCTION_ATTRIBUTES
 simde__m128i
 simde_mm_ternarylogic_epi32(simde__m128i a, simde__m128i b, simde__m128i c, int imm8)
   SIMDE_REQUIRE_CONSTANT_RANGE(imm8, 0, 255) {
-  simde__m128i_private
-    r_,
-    a_ = simde__m128i_to_private(a),
-    b_ = simde__m128i_to_private(b),
-    c_ = simde__m128i_to_private(c);
-
+  simde__m128i r, t;
+  const simde__m128i zero = simde_mm_setzero_si128();
+  const simde__m128i ff = simde_mm_cmpeq_epi8(zero, zero);
   const int bits_set =
     ((imm8 >> 7) & 1) +
     ((imm8 >> 6) & 1) +
@@ -57,21 +54,27 @@ simde_mm_ternarylogic_epi32(simde__m128i a, simde__m128i b, simde__m128i c, int 
 
   if (negate) imm8 = ~imm8;
 
-  SIMDE_VECTORIZE
-  for (size_t i = 0 ; i < (sizeof(r_.u32) / sizeof(r_.u32[0])) ; i++) {
-    r_.u32[i] = 0;
-    if (imm8 & 0x80) r_.u32[i] |=  a_.u32[i] &  b_.u32[i] &  c_.u32[i];
-    if (imm8 & 0x40) r_.u32[i] |=  a_.u32[i] &  b_.u32[i] & ~c_.u32[i];
-    if (imm8 & 0x20) r_.u32[i] |=  a_.u32[i] & ~b_.u32[i] &  c_.u32[i];
-    if (imm8 & 0x10) r_.u32[i] |=  a_.u32[i] & ~b_.u32[i] & ~c_.u32[i];
-    if (imm8 & 0x08) r_.u32[i] |= ~a_.u32[i] &  b_.u32[i] &  c_.u32[i];
-    if (imm8 & 0x04) r_.u32[i] |= ~a_.u32[i] &  b_.u32[i] & ~c_.u32[i];
-    if (imm8 & 0x02) r_.u32[i] |= ~a_.u32[i] & ~b_.u32[i] &  c_.u32[i];
-    if (imm8 & 0x01) r_.u32[i] |= ~a_.u32[i] & ~b_.u32[i] & ~c_.u32[i];
-    if (negate)      r_.u32[i]  = ~r_.u32[i];
-  }
+  r = zero;
 
-  return simde__m128i_from_private(r_);
+  if (imm8 & 0xc0) t = simde_mm_and_si128(a, b);
+  if (imm8 & 0x80) r = simde_mm_or_si128(r,    simde_mm_and_si128(c, t));
+  if (imm8 & 0x40) r = simde_mm_or_si128(r, simde_mm_andnot_si128(c, t));
+
+  if (imm8 & 0x30) t = simde_mm_andnot_si128(b, a);
+  if (imm8 & 0x20) r = simde_mm_or_si128(r,    simde_mm_and_si128(c, t));
+  if (imm8 & 0x10) r = simde_mm_or_si128(r, simde_mm_andnot_si128(c, t));
+
+  if (imm8 & 0x0c) t = simde_mm_andnot_si128(a, b);
+  if (imm8 & 0x08) r = simde_mm_or_si128(r,    simde_mm_and_si128(c, t));
+  if (imm8 & 0x04) r = simde_mm_or_si128(r, simde_mm_andnot_si128(c, t));
+
+  if (imm8 & 0x03) t = simde_mm_xor_si128(simde_mm_or_si128(a, b), ff);
+  if (imm8 & 0x02) r = simde_mm_or_si128(r,    simde_mm_and_si128(c, t));
+  if (imm8 & 0x01) r = simde_mm_or_si128(r, simde_mm_andnot_si128(c, t));
+
+  if (negate)      r = simde_mm_xor_si128(r, ff);
+
+  return r;
 }
 #if defined(SIMDE_X86_AVX512VL_NATIVE) && defined(SIMDE_X86_AVX512F_NATIVE)
   #define simde_mm_ternarylogic_epi32(a, b, c, imm8) _mm_ternarylogic_epi32(a, b, c, imm8)
