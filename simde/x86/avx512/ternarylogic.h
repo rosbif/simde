@@ -35,7 +35,9 @@ SIMDE_DISABLE_UNWANTED_DIAGNOSTICS
 SIMDE_BEGIN_DECLS_
 
 #if 1
-/* Inefficient code with clang for imm8 = 88 (0x58) */
+/* clang generates crazy inefficient code for imm8 = 24, 26, 28, 30, 36, 38, 44, 52, 54, 56, 78, 88, 100, 114 */
+/* (I only tested up to 127 as I was doing this by hand) */
+/* For these bad cases the RThroughput is about three times lower with u64 instead of u32 */
 SIMDE_FUNCTION_ATTRIBUTES
 simde__m128i
 simde_mm_ternarylogic_epi32(simde__m128i a, simde__m128i b, simde__m128i c, int imm8)
@@ -45,136 +47,136 @@ simde_mm_ternarylogic_epi32(simde__m128i a, simde__m128i b, simde__m128i c, int 
     a_ = simde__m128i_to_private(a),
     b_ = simde__m128i_to_private(b),
     c_ = simde__m128i_to_private(c);
-  uint32_t t;
+  uint64_t t;
   int to_do, mask;
 
   SIMDE_VECTORIZE
-  for (size_t i = 0 ; i < (sizeof(r_.u32) / sizeof(r_.u32[0])) ; i++) {
+  for (size_t i = 0 ; i < (sizeof(r_.u64) / sizeof(r_.u64[0])) ; i++) {
     to_do = imm8;
 
     mask = 0xFF;
     if ((to_do & mask) == mask) {
-      r_.u32[i] = UINT32_MAX;
+      r_.u64[i] = UINT64_MAX;
       to_do &= ~mask;
     }
-    else r_.u32[i] = 0;
+    else r_.u64[i] = 0;
 
     mask = 0xF0;
     if ((to_do & mask) && ((imm8 & mask) == mask)) {
-      r_.u32[i] = a_.u32[i];
+      r_.u64[i] = a_.u64[i];
       to_do &= ~mask;
     }
 
     mask = 0xCC;
     if ((to_do & mask) && ((imm8 & mask) == mask)) {
-      r_.u32[i] |= b_.u32[i];
+      r_.u64[i] |= b_.u64[i];
       to_do &= ~mask;
     }
 
     mask = 0xAA;
     if ((to_do & mask) && ((imm8 & mask) == mask)) {
-      r_.u32[i] |= c_.u32[i];
+      r_.u64[i] |= c_.u64[i];
       to_do &= ~mask;
     }
 
     mask = 0x0F;
     if ((to_do & mask) && ((imm8 & mask) == mask)) {
-      r_.u32[i] |= ~a_.u32[i];
+      r_.u64[i] |= ~a_.u64[i];
       to_do &= ~mask;
     }
 
     mask = 0x33;
     if ((to_do & mask) && ((imm8 & mask) == mask)) {
-      r_.u32[i] |= ~b_.u32[i];
+      r_.u64[i] |= ~b_.u64[i];
       to_do &= ~mask;
     }
 
     mask = 0x55;
     if ((to_do & mask) && ((imm8 & mask) == mask)) {
-      r_.u32[i] |= ~c_.u32[i];
+      r_.u64[i] |= ~c_.u64[i];
       to_do &= ~mask;
     }
 
     mask = 0x3C;
     if ((to_do & mask) && ((imm8 & mask) == mask)) {
-      r_.u32[i] |= a_.u32[i] ^ b_.u32[i];
+      r_.u64[i] |= a_.u64[i] ^ b_.u64[i];
       to_do &= ~mask;
     }
 
     mask = 0x5A;
     if ((to_do & mask) && ((imm8 & mask) == mask)) {
-      r_.u32[i] |= a_.u32[i] ^ c_.u32[i];
+      r_.u64[i] |= a_.u64[i] ^ c_.u64[i];
       to_do &= ~mask;
     }
 
     mask = 0x66;
     if ((to_do & mask) && ((imm8 & mask) == mask)) {
-      r_.u32[i] |= b_.u32[i] ^ c_.u32[i];
+      r_.u64[i] |= b_.u64[i] ^ c_.u64[i];
       to_do &= ~mask;
     }
 
     mask = 0xA0;
     if ((to_do & mask) && ((imm8 & mask) == mask)) {
-      r_.u32[i] |= a_.u32[i] & c_.u32[i];
+      r_.u64[i] |= a_.u64[i] & c_.u64[i];
       to_do &= ~mask;
     }
 
     mask = 0x50;
     if ((to_do & mask) && ((imm8 & mask) == mask)) {
-      r_.u32[i] |= ~c_.u32[i] & a_.u32[i];
+      r_.u64[i] |= ~c_.u64[i] & a_.u64[i];
       to_do &= ~mask;
     }
 
     mask = 0x0A;
     if ((to_do & mask) && ((imm8 & mask) == mask)) {
-      r_.u32[i] |= ~a_.u32[i] & c_.u32[i];
+      r_.u64[i] |= ~a_.u64[i] & c_.u64[i];
       to_do &= ~mask;
     }
 
     mask = 0x88;
     if ((to_do & mask) && ((imm8 & mask) == mask)) {
-      r_.u32[i] |= b_.u32[i] & c_.u32[i];
+      r_.u64[i] |= b_.u64[i] & c_.u64[i];
       to_do &= ~mask;
     }
 
     mask = 0x44;
     if ((to_do & mask) && ((imm8 & mask) == mask)) {
-      r_.u32[i] |= ~c_.u32[i] & b_.u32[i];
+      r_.u64[i] |= ~c_.u64[i] & b_.u64[i];
       to_do &= ~mask;
     }
 
     mask = 0x22;
     if ((to_do & mask) && ((imm8 & mask) == mask)) {
-      r_.u32[i] |= ~b_.u32[i] & c_.u32[i];
+      r_.u64[i] |= ~b_.u64[i] & c_.u64[i];
       to_do &= ~mask;
     }
 
     if (to_do & 0xc0) {
-      t = a_.u32[i] & b_.u32[i];
-      if ((to_do & 0xc0) == 0xc0) r_.u32[i] |= t;
-      else if (to_do & 0x80)      r_.u32[i] |=  c_.u32[i] & t;
-      else                        r_.u32[i] |= ~c_.u32[i] & t;
+      t = a_.u64[i] & b_.u64[i];
+      if ((to_do & 0xc0) == 0xc0) r_.u64[i] |= t;
+      else if (to_do & 0x80)      r_.u64[i] |=  c_.u64[i] & t;
+      else                        r_.u64[i] |= ~c_.u64[i] & t;
     }
 
     if (to_do & 0x30) {
-      t = ~b_.u32[i] & a_.u32[i];
-      if ((to_do & 0x30) == 0x30) r_.u32[i] |= t;
-      else if (to_do & 0x20)      r_.u32[i] |=  c_.u32[i] & t;
-      else                        r_.u32[i] |= ~c_.u32[i] & t;
+      t = ~b_.u64[i] & a_.u64[i];
+      if ((to_do & 0x30) == 0x30) r_.u64[i] |= t;
+      else if (to_do & 0x20)      r_.u64[i] |=  c_.u64[i] & t;
+      else                        r_.u64[i] |= ~c_.u64[i] & t;
     }
 
     if (to_do & 0x0c) {
-      t = ~a_.u32[i] & b_.u32[i];
-      if ((to_do & 0x0c) == 0x0c) r_.u32[i] |= t;
-      else if (to_do & 0x08)      r_.u32[i] |=  c_.u32[i] & t;
-      else                        r_.u32[i] |= ~c_.u32[i] & t;
+      t = ~a_.u64[i] & b_.u64[i];
+      if ((to_do & 0x0c) == 0x0c) r_.u64[i] |= t;
+      else if (to_do & 0x08)      r_.u64[i] |=  c_.u64[i] & t;
+      else                        r_.u64[i] |= ~c_.u64[i] & t;
     }
 
     if (to_do & 0x03) {
-      t = ~(a_.u32[i] | b_.u32[i]);
-      if ((to_do & 0x03) == 0x03) r_.u32[i] |= t;
-      else if (to_do & 0x02)      r_.u32[i] |=  c_.u32[i] & t;
-      else                        r_.u32[i] |= ~c_.u32[i] & t;
+      t = ~(a_.u64[i] | b_.u64[i]);
+      if ((to_do & 0x03) == 0x03) r_.u64[i] |= t;
+      else if (to_do & 0x02)      r_.u64[i] |=  c_.u64[i] & t;
+      else                        r_.u64[i] |= ~c_.u64[i] & t;
     }
   }
 
