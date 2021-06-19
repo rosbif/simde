@@ -905,6 +905,9 @@ SIMDE_DIAGNOSTIC_DISABLE_CPP98_COMPAT_PEDANTIC_
 #      if !HEDLEY_GCC_VERSION_CHECK(11,0,0)
 #        define SIMDE_BUG_GCC_95483
 #      endif
+#      if defined(__OPTIMIZE__)
+#        define SIMDE_BUG_GCC_100927
+#      endif
 #      define SIMDE_BUG_GCC_98521
 #    endif
 #    if !HEDLEY_GCC_VERSION_CHECK(9,4,0) && defined(SIMDE_ARCH_AARCH64)
@@ -925,6 +928,12 @@ SIMDE_DIAGNOSTIC_DISABLE_CPP98_COMPAT_PEDANTIC_
 #      endif
 #    elif defined(SIMDE_ARCH_ZARCH)
 #      define SIMDE_BUG_GCC_95782
+#    endif
+#    if defined(SIMDE_ARCH_MIPS_MSA)
+#      define SIMDE_BUG_GCC_97248
+#      define SIMDE_BUG_GCC_100760
+#      define SIMDE_BUG_GCC_100761
+#      define SIMDE_BUG_GCC_100762
 #    endif
 #    define SIMDE_BUG_GCC_95399
 #  elif defined(__clang__)

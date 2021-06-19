@@ -8,6 +8,11 @@ DOCKER_DIR="$(dirname "${0}")"
 VOLUME_OPTIONS=""
 CAPABILITIES=""
 RELEASE="testing"
+PROMPT=n
+
+if [ "x$QEMU_GIT" == 'x' ]; then
+  QEMU_GIT=n
+fi
 
 if [ "${OSTYPE}" == "linux-gnu" ] && [ "$(basename "${DOCKER}")" = "podman" ]; then
   CAPABILITIES="--cap-add=CAP_SYS_PTRACE";
@@ -34,18 +39,23 @@ if [ -z "${BUILD_IMAGE}" ]; then
 
   if [[ -z "${CURRENT_IMAGE_CREATED}" || -z "${DATE}" ]]; then
     BUILD_IMAGE=y
+    PROMPT=y
   elif [ ${CURRENT_IMAGE_CREATED} -lt ${BUILD_CUTOFF_TIME} ]; then
     BUILD_IMAGE=y
+    PROMPT=y
   else
     BUILD_IMAGE=n
   fi
-else
-  BUILD_IMAGE=y
+fi
+
+if [ "${PROMPT}" == "y" ]; then
+  read -p "Image older than a week, Rebuild? [Y/n]: " BUILD_IMAGE
+  BUILD_IMAGE=${BUILD_IMAGE:-y}
 fi
 
 if [ "${BUILD_IMAGE}" != "n" ]; then
   "${DOCKER}" rmi -f "${IMAGE_NAME}" 2>/dev/null || true
-  "${DOCKER}" build --build-arg "release=${RELEASE}" -t "${IMAGE_NAME}" ${CAPABILITIES} -f "${DOCKER_DIR}/Dockerfile" "${DOCKER_DIR}/.."
+  "${DOCKER}" build --build-arg "RELEASE=${RELEASE}" --build-arg "QEMU_GIT=${QEMU_GIT}" -t "${IMAGE_NAME}" ${CAPABILITIES} -f "${DOCKER_DIR}/Dockerfile" "${DOCKER_DIR}/.."
 fi
 
 if [ "$(basename "${DOCKER}")" = "podman" ]; then
